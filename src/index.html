@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Land Registry DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --background-color: #f3f4f6;
+            --card-background: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #22c55e;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--background-color);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .land-details {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .land-details.active {
+            display: block;
+        }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .property-card {
+            background: var(--card-background);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Land Registry System</h1>
+            <div class="connection-status">
+                <div class="status-indicator"></div>
+                <p>Connected Account: <span id="account">Not Connected</span></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Register New Land</h2>
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="number" id="regId" placeholder="Land ID" min="1">
+                    <input type="text" id="regLocation" placeholder="Location">
+                    <input type="number" id="regArea" placeholder="Area in square meters" min="1">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="regPrice" placeholder="Price (ETH)">
+                    <input type="text" id="regDescription" placeholder="Property Description">
+                </div>
+                <button onclick="registerLand()">Register Land</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Transfer Land Ownership</h2>
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="number" id="transferId" placeholder="Land ID" min="1">
+                    <input type="text" id="newOwner" placeholder="New Owner Address">
+                </div>
+                <button onclick="transferOwnership()">Transfer Ownership</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Land Details</h2>
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="number" id="getLandId" placeholder="Land ID" min="1">
+                    <button onclick="getLandDetails()">Get Details</button>
+                </div>
+                <div id="landDetails" class="land-details">
+                    <!-- Land details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Recent Properties</h2>
+            <div class="property-grid" id="recentProperties">
+                <!-- Recent properties will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Web3
+        async function initWeb3() {
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await web3.eth.getAccounts();
+                    document.getElementById('account').textContent = accounts[0];
+                    loadRecentProperties();
+                } catch (error) {
+                    console.error("User denied account access");
+                }
+            } else {
+                console.log('Non-Ethereum browser detected. Consider installing MetaMask!');
+            }
+        }
+
+        // Register new land
+        async function registerLand() {
+            const id = document.getElementById('regId').value;
+            const location = document.getElementById('regLocation').value;
+            const area = document.getElementById('regArea').value;
+            const price = document.getElementById('regPrice').value;
+            const description = document.getElementById('regDescription').value;
+
+            if (!id || !location || !area || !price || !description) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing Information',
+                    text: 'Please fill in all fields'
+                });
+                return;
+            }
+
+            try {
+                // Contract interaction would go here
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Land registered successfully'
+                });
+                clearForm(['regId', 'regLocation', 'regArea', 'regPrice', 'regDescription']);
+                loadRecentProperties();
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to register land: ' + error.message
+                });
+            }
+        }
+
+        // Transfer ownership
+        async function transferOwnership() {
+            const id = document.getElementById('transferId').value;
+            const newOwner = document.getElementById('newOwner').value;
+
+            if (!id || !newOwner) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing Information',
+                    text: 'Please fill in all fields'
+                });
+                return;
+            }
+
+            try {
+                // Contract interaction would go here
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Ownership transferred successfully'
+                });
+                clearForm(['transferId', 'newOwner']);
+                loadRecentProperties();
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to transfer ownership: ' + error.message
+                });
+            }
+        }
+
+        // Get land details
+        async function getLandDetails() {
+            const id = document.getElementById('getLandId').value;
+
+            if (!id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing Information',
+                    text: 'Please enter a Land ID'
+                });
+                return;
+            }
+
+            try {
+                // Mock data - replace with actual contract call
+                const details = {
+                    owner: '0x1234...5678',
+                    location: 'Sample Location',
+                    area: 1000,
+                    price: '5 ETH',
+                    description: 'Beautiful property with garden'
+                };
+
+                const detailsDiv = document.getElementById('landDetails');
+                detailsDiv.innerHTML = `
+                    <h3>Property #${id}</h3>
+                    <p><strong>Owner:</strong> ${details.owner}</p>
+                    <p><strong>Location:</strong> ${details.location}</p>
+                    <p><strong>Area:</strong> ${details.area} sq m</p>
+                    <p><strong>Price:</strong> ${details.price}</p>
+                    <p><strong>Description:</strong> ${details.description}</p>
+                `;
+                detailsDiv.classList.add('active');
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to get land details: ' + error.message
+                });
+            }
+        }
+
+        // Load recent properties
+        function loadRecentProperties() {
+            // Mock data - replace with actual contract call
+            const properties = [
+                { id: 1, location: 'Downtown', area: 500, price: '3 ETH' },
+                { id: 2, location: 'Suburb', area: 750, price: '4 ETH' },
+                { id: 3, location: 'Beach Front', area: 1000, price: '10 ETH' }
+            ];
+
+            const grid = document.getElementById('recentProperties');
+            grid.innerHTML = properties.map(prop => `
+                <div class="property-card">
+                    <h3>Property #${prop.id}</h3>
+                    <p><strong>Location:</strong> ${prop.location}</p>
+                    <p><strong>Area:</strong> ${prop.area} sq m</p>
+                    <p><strong>Price:</strong> ${prop.price}</p>
+                </div>
+            `).join('');
+        }
+
+        // Helper function to clear form fields
+        function clearForm(fields) {
+            fields.forEach(field => {
+                document.getElementById(field).value = '';
+            });
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWeb3);
+    </script>
+</body>
+</html>
